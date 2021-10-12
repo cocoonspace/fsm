@@ -154,3 +154,38 @@ func ExampleTimes() {
 	_ = f.Event(EventFoo) // no transition
 	_ = f.Event(EventFoo) // transition to StateBar
 }
+
+func TestEntryExit(t *testing.T) {
+	f := fsm.New(StateFoo)
+	f.Transition(
+		fsm.On(EventFoo), fsm.Src(StateFoo),
+		fsm.Dst(StateBar),
+	)
+	f.Transition(
+		fsm.On(EventBar), fsm.Src(StateBar),
+		fsm.Dst(StateFoo),
+	)
+	entry, exit := false, false
+	f.Entry(StateBar, func() {
+		entry = true
+	})
+	f.Exit(StateBar, func() {
+		exit = true
+	})
+
+	_ = f.Event(EventFoo)
+	if !entry {
+		t.Error("Entry func has not been called")
+	}
+	if exit {
+		t.Error("Exit func has wrongly been called")
+	}
+	entry, exit = false, false
+	_ = f.Event(EventBar)
+	if entry {
+		t.Error("Entry func has wrongly been called")
+	}
+	if !exit {
+		t.Error("Exit func has not been called")
+	}
+}

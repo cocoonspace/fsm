@@ -44,6 +44,8 @@ func (t *transition) apply(fsm *FSM) {
 // FSM is a finite state machine.
 type FSM struct {
 	transitions []transition
+	entry       map[State]func()
+	exit        map[State]func()
 	current     State
 	initial     State
 	previous    int
@@ -53,6 +55,8 @@ type FSM struct {
 // New creates a new finite state machine having the specified initial state.
 func New(initial State) *FSM {
 	return &FSM{
+		entry:   map[State]func(){},
+		exit:    map[State]func(){},
 		current: initial,
 		initial: initial,
 	}
@@ -60,6 +64,7 @@ func New(initial State) *FSM {
 
 // Option defines a transition option.
 type Option func(*transition)
+
 type result int
 
 const (
@@ -69,6 +74,7 @@ const (
 )
 
 type optionCondition func(e Event, times int, fsm *FSM) result
+
 type optionAction func(*FSM)
 
 // Transition creates a new transition, usually having trigger On an Event, from a Src State, to a Dst State.
@@ -110,7 +116,16 @@ func On(e Event) Option {
 func Dst(s State) Option {
 	return func(t *transition) {
 		t.actions = append(t.actions, func(fsm *FSM) {
+			if fsm.current == s {
+				return
+			}
+			if fn, ok := fsm.exit[fsm.current]; ok {
+				fn()
+			}
 			fsm.current = s
+			if fn, ok := fsm.entry[fsm.current]; ok {
+				fn()
+			}
 		})
 	}
 }
@@ -172,6 +187,16 @@ func (f *FSM) Reset() {
 // Current returns the current state.
 func (f *FSM) Current() State {
 	return f.current
+}
+
+// Entry sets a func that will be called when entering a state.
+func (f *FSM) Entry(state State, fn func()) {
+	f.entry[state] = fn
+}
+
+// Exit sets a func that will be called when entering a state.
+func (f *FSM) Exit(state State, fn func()) {
+	f.exit[state] = fn
 }
 
 // Event send an Event to a machine, applying at most one transition.
