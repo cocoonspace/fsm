@@ -2,7 +2,7 @@
 
 Package fsm allows you to add [finite-state machines](https://en.wikipedia.org/wiki/Finite-state_machine) to your Go code.
 
-States and Events are defined as int consts :
+States and Events are defined as int consts:
 
 ```go
 const (
@@ -22,7 +22,7 @@ f.Transition(
 )
 ```
 
-You can have custom checks or actions :
+You can have custom checks or actions:
 
 ```go
 f.Transition(
@@ -35,7 +35,7 @@ f.Transition(
 )
 ```
 
-Transitions can be triggered the second time an event occurs :
+Transitions can be triggered the second time an event occurs:
 
 ```go
 f.Transition(
@@ -44,7 +44,7 @@ f.Transition(
 )
 ```
 
-Functions call be called when entering or leaving a state :
+Functions call be called when entering or leaving a state:
 
 ```go
 f.EnterState(StateFoo, func() {
@@ -63,7 +63,7 @@ f.Exit(func(state fsm.State) {
 
 ## Performance
 
-This package is much faster and does a lot less allocations than github.com/looplab/fsm :
+This package is much faster and does a lot less allocations than github.com/looplab/fsm:
 
 ```
 BenchmarkCocoonSpaceFSM-12    	29371851	        40.32 ns/op	       0 B/op	       0 allocs/op

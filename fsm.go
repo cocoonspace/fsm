@@ -197,28 +197,28 @@ func (f *FSM) Current() State {
 	return f.current
 }
 
-// Enter sets a func that will be called when entering a state.
+// Enter sets a func that will be called when entering any state.
 func (f *FSM) Enter(fn func(state State)) {
 	f.enter = fn
 }
 
-// Exit sets a func that will be called when entering a state.
+// Exit sets a func that will be called when exiting any state.
 func (f *FSM) Exit(fn func(state State)) {
 	f.exit = fn
 }
 
-// EnterState sets a func that will be called when entering a state.
+// EnterState sets a func that will be called when entering a specific state.
 func (f *FSM) EnterState(state State, fn func()) {
 	f.enterState[state] = fn
 }
 
-// ExitState sets a func that will be called when entering a state.
+// ExitState sets a func that will be called when exiting a specific state.
 func (f *FSM) ExitState(state State, fn func()) {
 	f.exitState[state] = fn
 }
 
 // Event send an Event to a machine, applying at most one transition.
-// true is returned if a transition is applied.
+// true is returned if a transition has been applied, false otherwise.
 func (f *FSM) Event(e Event) bool {
 	for i := range f.transitions {
 		times := f.times
