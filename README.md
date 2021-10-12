@@ -61,6 +61,19 @@ f.Exit(func(state fsm.State) {
 })
 ```
 
+## Performance
+
+This package is much faster and does a lot less allocations than github.com/looplab/fsm :
+
+```
+BenchmarkCocoonSpaceFSM-12    	29371851	        40.32 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLooplabFSM-12        	 2438946	       487.8 ns/op	     320 B/op	       4 allocs/op
+```
+
+(benchmark data is for two executed transitions)
+
+Benchmark information on https://github.com/cocoonspace/fsm-bench
+
 ## Installation
 
 go get github.com/cocoonspace/fsm
