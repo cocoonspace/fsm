@@ -14,6 +14,7 @@ const (
 
 const (
 	EventFoo fsm.Event = iota
+	EventBar
 )
 
 func TestFSM(t *testing.T) {
@@ -28,6 +29,10 @@ func TestFSM(t *testing.T) {
 	}
 	if f.Current() != StateBar {
 		t.Error("Bad destination state")
+	}
+	f.Reset()
+	if f.Current() != StateFoo {
+		t.Error("Bad state after Reset")
 	}
 }
 
@@ -47,7 +52,7 @@ func TestCheck(t *testing.T) {
 	check = true
 	res = f.Event(EventFoo)
 	if !res && f.Current() != StateBar {
-		t.Error("Transition should happen because of Check")
+		t.Error("Transition should happen thanks to Check")
 	}
 }
 
@@ -59,6 +64,26 @@ func ExampleCheck() {
 		}),
 		fsm.Dst(StateBar),
 	)
+}
+
+func TestNotCheck(t *testing.T) {
+	check := true
+	f := fsm.New(StateFoo)
+	f.Transition(
+		fsm.On(EventFoo), fsm.Src(StateFoo), fsm.NotCheck(func() bool {
+			return check
+		}),
+		fsm.Dst(StateBar),
+	)
+	res := f.Event(EventFoo)
+	if res || f.Current() == StateBar {
+		t.Error("Transition should not happen because of NotCheck")
+	}
+	check = false
+	res = f.Event(EventFoo)
+	if !res && f.Current() != StateBar {
+		t.Error("Transition should happen thanks to NotCheck")
+	}
 }
 
 func TestCall(t *testing.T) {
@@ -92,14 +117,30 @@ func TestTimes(t *testing.T) {
 		fsm.On(EventFoo), fsm.Src(StateFoo), fsm.Times(2),
 		fsm.Dst(StateBar),
 	)
+	f.Transition(
+		fsm.On(EventBar), fsm.Src(StateBar),
+		fsm.Dst(StateFoo),
+	)
 
 	res := f.Event(EventFoo)
 	if res || f.Current() == StateBar {
 		t.Error("Transition should not happen the first time")
 	}
-	res = f.Event(EventFoo) // transition to StateBar
+	res = f.Event(EventFoo)
 	if !res || f.Current() != StateBar {
 		t.Error("Transition should happen the second time")
+	}
+	res = f.Event(EventBar)
+	if !res || f.Current() != StateFoo {
+		t.Error("FSM should have returned to StateFoo")
+	}
+	res = f.Event(EventFoo)
+	if res || f.Current() == StateBar {
+		t.Error("Transition should not happen the first time of the second run")
+	}
+	res = f.Event(EventFoo)
+	if !res || f.Current() != StateBar {
+		t.Error("Transition should happen the second time of the second run")
 	}
 }
 

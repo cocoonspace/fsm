@@ -178,7 +178,11 @@ func (f *FSM) Current() State {
 // true is returned if a transition is applied.
 func (f *FSM) Event(e Event) bool {
 	for i := range f.transitions {
-		if res := f.transitions[i].match(e, f.times+1, f); res != resultNOK {
+		times := f.times
+		if i != f.previous {
+			times = 0
+		}
+		if res := f.transitions[i].match(e, times+1, f); res != resultNOK {
 			if res == resultOK {
 				f.transitions[i].apply(f)
 			}
@@ -186,7 +190,7 @@ func (f *FSM) Event(e Event) bool {
 				f.times++
 			} else {
 				f.previous = i
-				f.times = 0
+				f.times = 1
 			}
 			return res == resultOK
 		}
