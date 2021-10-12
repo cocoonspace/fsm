@@ -35,7 +35,7 @@ Transitions can be triggered the second time an event occurs:
 		fsm.Dst(StateBar),
 	)
 
-Functions call be called when entering or leaving a state:
+Functions can be called when entering or leaving a state:
 
 	f.EnterState(StateFoo, func() {
 		// do something
