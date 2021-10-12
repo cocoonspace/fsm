@@ -6,18 +6,19 @@ States and Events are defined as int consts :
 
 ```go
 const (
-StateFoo fsm.State = iota
-StateBar
+    StateFoo fsm.State = iota
+    StateBar
 )
 
 const (
-EventFoo fsm.Event = iota
+    EventFoo fsm.Event = iota
+    EventBar
 )
 
 f := fsm.New(StateFoo)
 f.Transition(
-fsm.On(EventFoo), fsm.Src(StateFoo),
-fsm.Dst(StateBar),
+    fsm.On(EventFoo), fsm.Src(StateFoo),
+    fsm.Dst(StateBar),
 )
 ```
 
@@ -25,12 +26,12 @@ You can have custom checks or actions :
 
 ```go
 f.Transition(
-fsm.Src(StateFoo), fsm.Check(func () bool {
-// check something
-}),
-fsm.Call(func () {
-// do something
-}),
+    fsm.Src(StateFoo), fsm.Check(func () bool {
+        // check something
+    }),
+    fsm.Call(func () {
+        // do something
+    }),
 )
 ```
 
@@ -38,8 +39,8 @@ Transitions can be triggered the second time an event occurs :
 
 ```go
 f.Transition(
-fsm.On(EventFoo), fsm.Src(StateFoo), fsm.Times(2),
-fsm.Dst(StateBar),
+    fsm.On(EventFoo), fsm.Src(StateFoo), fsm.Times(2),
+    fsm.Dst(StateBar),
 )
 ```
 
