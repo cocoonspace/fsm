@@ -44,6 +44,17 @@ f.Transition(
 )
 ```
 
+Functions call be called when entering or leaving a state :
+
+```go
+f.Entry(StateFoo, func() {
+    // do something	
+})
+f.Exit(StateFoo, func() {
+    // do something	
+})
+```
+
 ## Installation
 
 go get github.com/cocoonspace/fsm
