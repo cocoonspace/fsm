@@ -44,8 +44,10 @@ func (t *transition) apply(fsm *FSM) {
 // FSM is a finite state machine.
 type FSM struct {
 	transitions []transition
-	entry       map[State]func()
-	exit        map[State]func()
+	enterState  map[State]func()
+	exitState   map[State]func()
+	enter       func(State)
+	exit        func(State)
 	current     State
 	initial     State
 	previous    int
@@ -55,10 +57,10 @@ type FSM struct {
 // New creates a new finite state machine having the specified initial state.
 func New(initial State) *FSM {
 	return &FSM{
-		entry:   map[State]func(){},
-		exit:    map[State]func(){},
-		current: initial,
-		initial: initial,
+		enterState: map[State]func(){},
+		exitState:  map[State]func(){},
+		current:    initial,
+		initial:    initial,
 	}
 }
 
@@ -119,12 +121,18 @@ func Dst(s State) Option {
 			if fsm.current == s {
 				return
 			}
-			if fn, ok := fsm.exit[fsm.current]; ok {
+			if fn, ok := fsm.exitState[fsm.current]; ok {
 				fn()
 			}
+			if fsm.exit != nil {
+				fsm.exit(fsm.current)
+			}
 			fsm.current = s
-			if fn, ok := fsm.entry[fsm.current]; ok {
+			if fn, ok := fsm.enterState[fsm.current]; ok {
 				fn()
+			}
+			if fsm.enter != nil {
+				fsm.enter(fsm.current)
 			}
 		})
 	}
@@ -189,14 +197,24 @@ func (f *FSM) Current() State {
 	return f.current
 }
 
-// Entry sets a func that will be called when entering a state.
-func (f *FSM) Entry(state State, fn func()) {
-	f.entry[state] = fn
+// Enter sets a func that will be called when entering a state.
+func (f *FSM) Enter(fn func(state State)) {
+	f.enter = fn
 }
 
 // Exit sets a func that will be called when entering a state.
-func (f *FSM) Exit(state State, fn func()) {
-	f.exit[state] = fn
+func (f *FSM) Exit(fn func(state State)) {
+	f.exit = fn
+}
+
+// EnterState sets a func that will be called when entering a state.
+func (f *FSM) EnterState(state State, fn func()) {
+	f.enterState[state] = fn
+}
+
+// ExitState sets a func that will be called when entering a state.
+func (f *FSM) ExitState(state State, fn func()) {
+	f.exitState[state] = fn
 }
 
 // Event send an Event to a machine, applying at most one transition.

@@ -155,7 +155,41 @@ func ExampleTimes() {
 	_ = f.Event(EventFoo) // transition to StateBar
 }
 
-func TestEntryExit(t *testing.T) {
+func TestEnterExit(t *testing.T) {
+	f := fsm.New(StateFoo)
+	f.Transition(
+		fsm.On(EventFoo), fsm.Src(StateFoo),
+		fsm.Dst(StateBar),
+	)
+	f.Transition(
+		fsm.On(EventBar), fsm.Src(StateBar),
+		fsm.Dst(StateFoo),
+	)
+	var entry, exit fsm.State
+	f.Enter(func(state fsm.State) {
+		entry = state
+	})
+	f.Exit(func(state fsm.State) {
+		exit = state
+	})
+
+	_ = f.Event(EventFoo)
+	if entry != StateBar {
+		t.Error("Enter func has not been called")
+	}
+	if exit != StateFoo {
+		t.Error("Exit func has not been called")
+	}
+	_ = f.Event(EventBar)
+	if entry != StateFoo {
+		t.Error("Enter func has not been called")
+	}
+	if exit != StateBar {
+		t.Error("Exit func has not been called")
+	}
+}
+
+func TestEnterExitState(t *testing.T) {
 	f := fsm.New(StateFoo)
 	f.Transition(
 		fsm.On(EventFoo), fsm.Src(StateFoo),
@@ -166,26 +200,26 @@ func TestEntryExit(t *testing.T) {
 		fsm.Dst(StateFoo),
 	)
 	entry, exit := false, false
-	f.Entry(StateBar, func() {
+	f.EnterState(StateBar, func() {
 		entry = true
 	})
-	f.Exit(StateBar, func() {
+	f.ExitState(StateBar, func() {
 		exit = true
 	})
 
 	_ = f.Event(EventFoo)
 	if !entry {
-		t.Error("Entry func has not been called")
+		t.Error("EnterState func has not been called")
 	}
 	if exit {
-		t.Error("Exit func has wrongly been called")
+		t.Error("ExitState func has wrongly been called")
 	}
 	entry, exit = false, false
 	_ = f.Event(EventBar)
 	if entry {
-		t.Error("Entry func has wrongly been called")
+		t.Error("EnterState func has wrongly been called")
 	}
 	if !exit {
-		t.Error("Exit func has not been called")
+		t.Error("ExitState func has not been called")
 	}
 }

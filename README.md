@@ -47,10 +47,16 @@ f.Transition(
 Functions call be called when entering or leaving a state :
 
 ```go
-f.Entry(StateFoo, func() {
+f.EnterState(StateFoo, func() {
     // do something	
 })
-f.Exit(StateFoo, func() {
+f.Enter(func(state fsm.State) {
+    // do something	
+})
+f.ExitState(StateFoo, func() {
+    // do something	
+})
+f.Exit(func(state fsm.State) {
     // do something	
 })
 ```
