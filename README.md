@@ -44,7 +44,7 @@ f.Transition(
 )
 ```
 
-Functions call be called when entering or leaving a state:
+Functions can be called when entering or leaving a state:
 
 ```go
 f.EnterState(StateFoo, func() {
