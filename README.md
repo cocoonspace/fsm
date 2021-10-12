@@ -1,6 +1,6 @@
-# Finite State Machines [![PkgGoDev](https://pkg.go.dev/badge/github.com/cocoonspace/fsm)](https://pkg.go.dev/github.com/cocoonspace/fsm) [![Build Status](https://app.travis-ci.com/cocoonspace/fsm.svg?branch=master)](https://app.travis-ci.com/cocoonspace/fsm) [![Coverage Status](https://coveralls.io/repos/github/cocoonspace/fsm/badge.svg?branch=master)](https://coveralls.io/github/cocoonspace/fsm?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/cocoonspace/fsm)](https://goreportcard.com/report/github.com/cocoonspace/fsm)
+# fsm [![PkgGoDev](https://pkg.go.dev/badge/github.com/cocoonspace/fsm)](https://pkg.go.dev/github.com/cocoonspace/fsm) [![Build Status](https://app.travis-ci.com/cocoonspace/fsm.svg?branch=master)](https://app.travis-ci.com/cocoonspace/fsm) [![Coverage Status](https://coveralls.io/repos/github/cocoonspace/fsm/badge.svg?branch=master)](https://coveralls.io/github/cocoonspace/fsm?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/cocoonspace/fsm)](https://goreportcard.com/report/github.com/cocoonspace/fsm)
 
-Package fsm allows you to add Finite State Machines to your code.
+Package fsm allows you to add [finite-state machines](https://en.wikipedia.org/wiki/Finite-state_machine) to your Go code.
 
 States and Events are defined as int consts :
 
