@@ -1,9 +1,5 @@
 package fsm
 
-import (
-	"log"
-)
-
 // Event is the event type.
 // You can define your own values as
 //	const (
@@ -114,7 +110,6 @@ func On(e Event) Option {
 func Dst(s State) Option {
 	return func(t *transition) {
 		t.actions = append(t.actions, func(fsm *FSM) {
-			log.Println("[fsm] changing state from", fsm.current, "to", s)
 			fsm.current = s
 		})
 	}
@@ -183,7 +178,7 @@ func (f *FSM) Current() State {
 // true is returned if a transition is applied.
 func (f *FSM) Event(e Event) bool {
 	for i := range f.transitions {
-		if res := f.transitions[i].match(e, f.times, f); res != resultNOK {
+		if res := f.transitions[i].match(e, f.times+1, f); res != resultNOK {
 			if res == resultOK {
 				f.transitions[i].apply(f)
 			}
@@ -191,7 +186,7 @@ func (f *FSM) Event(e Event) bool {
 				f.times++
 			} else {
 				f.previous = i
-				f.times = 1
+				f.times = 0
 			}
 			return res == resultOK
 		}
