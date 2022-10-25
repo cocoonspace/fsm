@@ -72,12 +72,12 @@ type FSM struct {
 }
 
 // New creates a new finite state machine having the specified initial state.
-func New(initial State) *FSM {
+func New(initial ExtendedState) *FSM {
 	return &FSM{
 		enterState: map[State]func(){},
 		exitState:  map[State]func(){},
-		current:    initial,
-		initial:    initial,
+		current:    initial.State(),
+		initial:    initial.State(),
 	}
 }
 
