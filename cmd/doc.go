@@ -33,13 +33,20 @@ const (
 	EventFoo Event = iota
 )
 
-func example() *fsm.FSM {
+func example1() *fsm.FSM {
 	f := fsm.New(StateFoo.State())
+
 	f.Transition(
 		fsm.On(EventFoo),
 		fsm.Src(StateFoo),
 		fsm.Dst(StateBar),
 	)
+
+	return f
+}
+
+func example2() *fsm.FSM {
+	f := fsm.New(StateFoo.State())
 
 	f.Transition(
 		fsm.On(EventFoo),
@@ -56,6 +63,6 @@ func main() {
 		fmt.Println("use go generate")
 		return
 	}
-	f := example()
-	f.GenerateDoc("Visual example", os.Args[1])
+	example1().GenerateDoc("Visual simple event", os.Args[1])
+	example2().GenerateDoc("Visual repeated event", os.Args[1])
 }

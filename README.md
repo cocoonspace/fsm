@@ -22,6 +22,14 @@ f.Transition(
 )
 ```
 
+_Visual simple event_:
+```mermaid
+flowchart LR
+	id0(StateBar)
+	id1(StateFoo)
+	id1--> |EventFoo| id0
+```
+
 Transitions can be triggered the second time an event occurs:
 
 ```go
@@ -31,13 +39,12 @@ f.Transition(
 )
 ```
 
-_Visual example_:
+_Visual repeated event_:
 ```mermaid
 flowchart LR
-	id0(StateBar)
-	id1(StateFoo)
-	id1--> |EventFoo| id0
-	id1--> |2 x EventFoo| id0
+	id2(StateBar)
+	id3(StateFoo)
+	id3--> |2 x EventFoo| id2
 ```
 
 You can have custom checks or actions:
