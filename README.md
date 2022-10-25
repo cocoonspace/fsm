@@ -42,9 +42,9 @@ f.Transition(
 _Visual repeated event_:
 ```mermaid
 flowchart LR
-	id2(StateBar)
-	id3(StateFoo)
-	id3--> |2 x EventFoo| id2
+	id0(StateBar)
+	id1(StateFoo)
+	id1--> |2 x EventFoo| id0
 ```
 
 You can have custom checks or actions:

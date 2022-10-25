@@ -149,6 +149,7 @@ var (
 )
 
 func (f *FSM) insertMermaidGraph(w *bufio.Writer) {
+	uniqueNameCounter = 0
 	uniqueNameMapping := make(map[string]string)
 
 	w.WriteString("flowchart LR\n")
