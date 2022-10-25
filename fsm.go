@@ -226,13 +226,13 @@ func (f *FSM) exitStateInternal(state ExtendedState, fn func()) {
 
 // Event send an Event to a machine, applying at most one transition.
 // true is returned if a transition has been applied, false otherwise.
-func (f *FSM) Event(e Event) bool {
+func (f *FSM) Event(e ExtendedEvent) bool {
 	for i := range f.transitions {
 		times := f.times
 		if i != f.previous {
 			times = 0
 		}
-		if res := f.transitions[i].match(e, times+1, f); res != resultNOK {
+		if res := f.transitions[i].match(e.Event(), times+1, f); res != resultNOK {
 			if res == resultOK {
 				f.transitions[i].apply(f)
 			}
