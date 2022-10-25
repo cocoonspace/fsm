@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"runtime"
+	"strings"
 )
 
 type transition struct {
@@ -163,7 +164,14 @@ func (f *FSM) insertMermaidGraph(w *bufio.Writer) {
 			on = fmt.Sprintf("%d x %s", t.times, on)
 		}
 		for _, call := range t.calls {
-			on = on + "<br>" + call
+			prettyCall := call
+			for _, path := range documentationPathToIgnore {
+				if strings.HasPrefix(prettyCall, path) {
+					prettyCall = prettyCall[len(path):]
+					break
+				}
+			}
+			on = on + "<br>" + prettyCall
 		}
 
 		for _, src := range t.srcs {

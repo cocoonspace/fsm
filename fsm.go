@@ -248,18 +248,29 @@ func (f *FSM) Event(e ExtendedEvent) bool {
 	return false
 }
 
+var documentationPathToIgnore []string
+
+// AddDocumentationPathToIgnore add base path to ignore when displaying file path in generated documentation
+func AddDocumentationPathToIgnore(path string) {
+	documentationPathToIgnore = append(documentationPathToIgnore, path)
+}
+
+// State return the value of a State to be compliant with ExtendedState
 func (f State) State() State {
 	return f
 }
 
+// String return the value as a string of a State to be compliant with ExtendedState
 func (f State) String() string {
 	return strconv.Itoa(int(f))
 }
 
+// Event return the value of an Event to be compliant with ExtendedEvent
 func (e Event) Event() Event {
 	return e
 }
 
+// String return the value as a string of an Event to be compliant with ExtendedEvent
 func (e Event) String() string {
 	return strconv.Itoa(int(e))
 }
