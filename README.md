@@ -22,6 +22,31 @@ f.Transition(
 )
 ```
 
+_Visual simple event_:
+```mermaid
+flowchart LR
+	id0(StateBar)
+	id1(StateFoo)
+	id1--> |EventFoo| id0
+```
+
+Transitions can be triggered the second time an event occurs:
+
+```go
+f.Transition(
+    fsm.On(EventFoo), fsm.Src(StateFoo), fsm.Times(2),
+    fsm.Dst(StateBar),
+)
+```
+
+_Visual repeated event_:
+```mermaid
+flowchart LR
+	id0(StateBar)
+	id1(StateFoo)
+	id1--> |2 x EventFoo| id0
+```
+
 You can have custom checks or actions:
 
 ```go
@@ -32,15 +57,6 @@ f.Transition(
     fsm.Call(func () {
         // do something
     }),
-)
-```
-
-Transitions can be triggered the second time an event occurs:
-
-```go
-f.Transition(
-    fsm.On(EventFoo), fsm.Src(StateFoo), fsm.Times(2),
-    fsm.Dst(StateBar),
 )
 ```
 

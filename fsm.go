@@ -1,7 +1,13 @@
 package fsm
 
+import (
+	"fmt"
+	"strconv"
+)
+
 // Event is the event type.
 // You can define your own values as
+//
 //	const (
 //		EventFoo fsm.Event = iota
 //		EventBar
@@ -10,16 +16,27 @@ type Event int
 
 // State is the state type.
 // You can define your own values as
+//
 //	const (
 //		StateFoo fsm.State = iota
 //		StateBar
 //	)
 type State int
 
-type transition struct {
-	conditions []optionCondition
-	actions    []optionAction
+// NamedState allow for pretty printing the FSM state by providing a String() interface
+type NamedState interface {
+	State() State
+	fmt.Stringer
 }
+
+// NamedEvent allow for pretty printing the FSM event by providing a String() interface
+type NamedEvent interface {
+	Event() Event
+	fmt.Stringer
+}
+
+var _ NamedState = (*State)(nil)
+var _ NamedEvent = (*Event)(nil)
 
 func (t *transition) match(e Event, times int, fsm *FSM) result {
 	var res result
@@ -55,12 +72,12 @@ type FSM struct {
 }
 
 // New creates a new finite state machine having the specified initial state.
-func New(initial State) *FSM {
+func New(initial NamedState) *FSM {
 	return &FSM{
 		enterState: map[State]func(){},
 		exitState:  map[State]func(){},
-		current:    initial,
-		initial:    initial,
+		current:    initial.State(),
+		initial:    initial.State(),
 	}
 }
 
@@ -88,12 +105,11 @@ func (f *FSM) Transition(opts ...Option) {
 	f.transitions = append(f.transitions, t)
 }
 
-// Src defines the source States for a Transition.
-func Src(s ...State) Option {
+func srcInternal(s ...NamedState) Option {
 	return func(t *transition) {
 		t.conditions = append(t.conditions, func(e Event, times int, fsm *FSM) result {
 			for _, src := range s {
-				if fsm.current == src {
+				if fsm.current == src.State() {
 					return resultOK
 				}
 			}
@@ -102,11 +118,10 @@ func Src(s ...State) Option {
 	}
 }
 
-// On defines the Event that triggers a Transition.
-func On(e Event) Option {
+func onInternal(e NamedEvent) Option {
 	return func(t *transition) {
 		t.conditions = append(t.conditions, func(evt Event, times int, fsm *FSM) result {
-			if e == evt {
+			if e.Event() == evt {
 				return resultOK
 			}
 			return resultNOK
@@ -114,8 +129,7 @@ func On(e Event) Option {
 	}
 }
 
-// Dst defines the new State the machine switches to after a Transition.
-func Dst(s State) Option {
+func dstInternal(s NamedState) Option {
 	return func(t *transition) {
 		t.actions = append(t.actions, func(fsm *FSM) {
 			if fsm.current == s {
@@ -127,7 +141,7 @@ func Dst(s State) Option {
 			if fsm.exit != nil {
 				fsm.exit(fsm.current)
 			}
-			fsm.current = s
+			fsm.current = s.State()
 			if fn, ok := fsm.enterState[fsm.current]; ok {
 				fn()
 			}
@@ -138,8 +152,7 @@ func Dst(s State) Option {
 	}
 }
 
-// NotCheck is an external condition that allows a Transition only if fn returns false.
-func NotCheck(fn func() bool) Option {
+func notCheckInternal(fn func() bool) Option {
 	return func(t *transition) {
 		t.conditions = append(t.conditions, func(e Event, times int, fsm *FSM) result {
 			if !fn() {
@@ -150,8 +163,7 @@ func NotCheck(fn func() bool) Option {
 	}
 }
 
-// Check is an external condition that allows a Transition only if fn returns true.
-func Check(fn func() bool) Option {
+func checkInternal(fn func() bool) Option {
 	return func(t *transition) {
 		t.conditions = append(t.conditions, func(e Event, times int, fsm *FSM) result {
 			if fn() {
@@ -162,8 +174,7 @@ func Check(fn func() bool) Option {
 	}
 }
 
-// Call defines a function that is called when a Transition occurs.
-func Call(fn func()) Option {
+func callInternal(fn func()) Option {
 	return func(t *transition) {
 		t.actions = append(t.actions, func(fsm *FSM) {
 			fn()
@@ -171,9 +182,7 @@ func Call(fn func()) Option {
 	}
 }
 
-// Times defines the number of consecutive times conditions must be valid before a Transition occurs.
-// Times will not work if multiple Transitions are possible at the same time.
-func Times(n int) Option {
+func timesInternal(n int) Option {
 	return func(t *transition) {
 		t.conditions = append(t.conditions, func(e Event, times int, fsm *FSM) result {
 			if times == n {
@@ -207,25 +216,23 @@ func (f *FSM) Exit(fn func(state State)) {
 	f.exit = fn
 }
 
-// EnterState sets a func that will be called when entering a specific state.
-func (f *FSM) EnterState(state State, fn func()) {
-	f.enterState[state] = fn
+func (f *FSM) enterStateInternal(state NamedState, fn func()) {
+	f.enterState[state.State()] = fn
 }
 
-// ExitState sets a func that will be called when exiting a specific state.
-func (f *FSM) ExitState(state State, fn func()) {
-	f.exitState[state] = fn
+func (f *FSM) exitStateInternal(state NamedState, fn func()) {
+	f.exitState[state.State()] = fn
 }
 
 // Event send an Event to a machine, applying at most one transition.
 // true is returned if a transition has been applied, false otherwise.
-func (f *FSM) Event(e Event) bool {
+func (f *FSM) Event(e NamedEvent) bool {
 	for i := range f.transitions {
 		times := f.times
 		if i != f.previous {
 			times = 0
 		}
-		if res := f.transitions[i].match(e, times+1, f); res != resultNOK {
+		if res := f.transitions[i].match(e.Event(), times+1, f); res != resultNOK {
 			if res == resultOK {
 				f.transitions[i].apply(f)
 			}
@@ -239,4 +246,31 @@ func (f *FSM) Event(e Event) bool {
 		}
 	}
 	return false
+}
+
+var documentationPathToIgnore []string
+
+// AddDocumentationPathToIgnore add base path to ignore when displaying file path in generated documentation
+func AddDocumentationPathToIgnore(path string) {
+	documentationPathToIgnore = append(documentationPathToIgnore, path)
+}
+
+// State return the value of a State to be compliant with NamedState
+func (f State) State() State {
+	return f
+}
+
+// String return the value as a string of a State to be compliant with NamedState
+func (f State) String() string {
+	return strconv.Itoa(int(f))
+}
+
+// Event return the value of an Event to be compliant with NamedEvent
+func (e Event) Event() Event {
+	return e
+}
+
+// String return the value as a string of an Event to be compliant with NamedEvent
+func (e Event) String() string {
+	return strconv.Itoa(int(e))
 }
