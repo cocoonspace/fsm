@@ -23,20 +23,20 @@ type Event int
 //	)
 type State int
 
-// ExtendedState allow for pretty printing the FSM state by providing a String() interface
-type ExtendedState interface {
+// NamedState allow for pretty printing the FSM state by providing a String() interface
+type NamedState interface {
 	State() State
 	fmt.Stringer
 }
 
-// ExtendedEvent allow for pretty printing the FSM event by providing a String() interface
-type ExtendedEvent interface {
+// NamedEvent allow for pretty printing the FSM event by providing a String() interface
+type NamedEvent interface {
 	Event() Event
 	fmt.Stringer
 }
 
-var _ ExtendedState = (*State)(nil)
-var _ ExtendedEvent = (*Event)(nil)
+var _ NamedState = (*State)(nil)
+var _ NamedEvent = (*Event)(nil)
 
 func (t *transition) match(e Event, times int, fsm *FSM) result {
 	var res result
@@ -72,7 +72,7 @@ type FSM struct {
 }
 
 // New creates a new finite state machine having the specified initial state.
-func New(initial ExtendedState) *FSM {
+func New(initial NamedState) *FSM {
 	return &FSM{
 		enterState: map[State]func(){},
 		exitState:  map[State]func(){},
@@ -105,7 +105,7 @@ func (f *FSM) Transition(opts ...Option) {
 	f.transitions = append(f.transitions, t)
 }
 
-func srcInternal(s ...ExtendedState) Option {
+func srcInternal(s ...NamedState) Option {
 	return func(t *transition) {
 		t.conditions = append(t.conditions, func(e Event, times int, fsm *FSM) result {
 			for _, src := range s {
@@ -118,7 +118,7 @@ func srcInternal(s ...ExtendedState) Option {
 	}
 }
 
-func onInternal(e ExtendedEvent) Option {
+func onInternal(e NamedEvent) Option {
 	return func(t *transition) {
 		t.conditions = append(t.conditions, func(evt Event, times int, fsm *FSM) result {
 			if e.Event() == evt {
@@ -129,7 +129,7 @@ func onInternal(e ExtendedEvent) Option {
 	}
 }
 
-func dstInternal(s ExtendedState) Option {
+func dstInternal(s NamedState) Option {
 	return func(t *transition) {
 		t.actions = append(t.actions, func(fsm *FSM) {
 			if fsm.current == s {
@@ -216,17 +216,17 @@ func (f *FSM) Exit(fn func(state State)) {
 	f.exit = fn
 }
 
-func (f *FSM) enterStateInternal(state ExtendedState, fn func()) {
+func (f *FSM) enterStateInternal(state NamedState, fn func()) {
 	f.enterState[state.State()] = fn
 }
 
-func (f *FSM) exitStateInternal(state ExtendedState, fn func()) {
+func (f *FSM) exitStateInternal(state NamedState, fn func()) {
 	f.exitState[state.State()] = fn
 }
 
 // Event send an Event to a machine, applying at most one transition.
 // true is returned if a transition has been applied, false otherwise.
-func (f *FSM) Event(e ExtendedEvent) bool {
+func (f *FSM) Event(e NamedEvent) bool {
 	for i := range f.transitions {
 		times := f.times
 		if i != f.previous {
@@ -255,22 +255,22 @@ func AddDocumentationPathToIgnore(path string) {
 	documentationPathToIgnore = append(documentationPathToIgnore, path)
 }
 
-// State return the value of a State to be compliant with ExtendedState
+// State return the value of a State to be compliant with NamedState
 func (f State) State() State {
 	return f
 }
 
-// String return the value as a string of a State to be compliant with ExtendedState
+// String return the value as a string of a State to be compliant with NamedState
 func (f State) String() string {
 	return strconv.Itoa(int(f))
 }
 
-// Event return the value of an Event to be compliant with ExtendedEvent
+// Event return the value of an Event to be compliant with NamedEvent
 func (e Event) Event() Event {
 	return e
 }
 
-// String return the value as a string of an Event to be compliant with ExtendedEvent
+// String return the value as a string of an Event to be compliant with NamedEvent
 func (e Event) String() string {
 	return strconv.Itoa(int(e))
 }

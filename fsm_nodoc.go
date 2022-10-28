@@ -11,17 +11,17 @@ type transition struct {
 }
 
 // Src defines the source States for a Transition.
-func Src(s ...ExtendedState) Option {
+func Src(s ...NamedState) Option {
 	return srcInternal(s...)
 }
 
 // On defines the Event that triggers a Transition.
-func On(e ExtendedEvent) Option {
+func On(e NamedEvent) Option {
 	return onInternal(e)
 }
 
 // Dst defines the new State the machine switches to after a Transition.
-func Dst(s ExtendedState) Option {
+func Dst(s NamedState) Option {
 	return dstInternal(s)
 }
 
@@ -47,12 +47,12 @@ func Times(n int) Option {
 }
 
 // EnterState sets a func that will be called when entering a specific state.
-func (f *FSM) EnterState(state ExtendedState, fn func()) {
+func (f *FSM) EnterState(state NamedState, fn func()) {
 	f.enterStateInternal(state, fn)
 }
 
 // ExitState sets a func that will be called when exiting a specific state.
-func (f *FSM) ExitState(state ExtendedState, fn func()) {
+func (f *FSM) ExitState(state NamedState, fn func()) {
 	f.exitStateInternal(state, fn)
 }
 

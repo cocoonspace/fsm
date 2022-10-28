@@ -21,8 +21,8 @@ func (e Event) Event() fsm.Event {
 	return fsm.Event(e)
 }
 
-var _ fsm.ExtendedState = (*State)(nil)
-var _ fsm.ExtendedEvent = (*Event)(nil)
+var _ fsm.NamedState = (*State)(nil)
+var _ fsm.NamedEvent = (*Event)(nil)
 
 const (
 	StateFoo State = iota
