@@ -51,7 +51,6 @@ func (fc *flowchart) render(w io.Writer) error {
 		case '[':
 			r += nid + "[[" + label + "]]\n"
 		}
-		return
 	}
 	callnode := func(t *transition) string {
 		return strings.Join(t.calls, "|") + "||" + t.dst
@@ -166,7 +165,7 @@ func main() {
 		}
 	}
 	for _, fc := range flowcharts {
-		fc.render(os.Stdout)
+		_ = fc.render(os.Stdout)
 	}
 }
 
