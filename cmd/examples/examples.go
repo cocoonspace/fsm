@@ -36,3 +36,20 @@ func fsm2() {
 		fsm.Dst(StateFoo),
 	)
 }
+
+type sf struct {
+	fsm *fsm.FSM
+}
+
+var (
+	fs = sf{
+		fsm: fsm.New(StateFoo),
+	}
+)
+
+func fsm3() {
+	fs.fsm.Transition(
+		fsm.On(EventBar), fsm.Src(StateBar),
+		fsm.Dst(StateFoo),
+	)
+}

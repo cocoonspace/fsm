@@ -96,7 +96,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fsms := map[*ast.Object]*flowchart{}
+	flowcharts := map[*ast.Object]*flowchart{}
 	for _, d := range fileAst.Decls {
 		switch decl := d.(type) {
 		case *ast.FuncDecl:
@@ -108,23 +108,20 @@ func main() {
 						if fc == nil {
 							continue
 						}
-						switch v := stmt.Lhs[i].(type) {
-						case *ast.Ident:
-							fsms[v.Obj] = fc
-						case *ast.SelectorExpr:
-							fsms[v.Sel.Obj] = fc
+						if o := obj(stmt.Lhs[i]); o != nil {
+							flowcharts[o] = fc
 						}
 					}
 				case *ast.ExprStmt:
 					obj, t := parseTransition(stmt.X)
-					if obj == nil || t == nil {
+					if t == nil {
 						continue
 					}
-					if fsms[obj] == nil {
+					if obj == nil || flowcharts[obj] == nil {
 						fmt.Fprintf(os.Stderr, "Error: Found transition but no matching FSM in %v\n", fset.Position(stmt.Pos()))
 						continue
 					}
-					fsms[obj].transitions = append(fsms[obj].transitions, *t)
+					flowcharts[obj].transitions = append(flowcharts[obj].transitions, *t)
 				}
 			}
 		case *ast.GenDecl:
@@ -135,7 +132,7 @@ func main() {
 						if len(spec.Values) > i {
 							fc := parseInit(spec.Values[i])
 							if fc != nil {
-								fsms[id.Obj] = fc
+								flowcharts[id.Obj] = fc
 							}
 						}
 					}
@@ -143,14 +140,27 @@ func main() {
 			}
 		}
 	}
-	for _, fc := range fsms {
+	for _, fc := range flowcharts {
 		fc.render(os.Stdout)
 	}
 }
 
 func parseInit(e ast.Expr) *flowchart {
-	call, ok := e.(*ast.CallExpr)
-	if !ok || len(call.Args) != 1 {
+	var call *ast.CallExpr
+	switch v := e.(type) {
+	case *ast.CallExpr:
+		call = v
+	case *ast.KeyValueExpr:
+		return parseInit(v.Value)
+	case *ast.CompositeLit:
+		for _, e := range v.Elts {
+			i := parseInit(e)
+			if i != nil {
+				return i
+			}
+		}
+	}
+	if call == nil || len(call.Args) != 1 {
 		return nil
 	}
 	fc := flowchart{}
@@ -200,5 +210,19 @@ func parseTransition(e ast.Expr) (*ast.Object, *transition) {
 			}
 		}
 	}
-	return sel.X.(*ast.Ident).Obj, &t
+	return obj(sel.X), &t
+}
+
+func obj(s ast.Expr) *ast.Object {
+	switch v := s.(type) {
+	case *ast.Ident:
+		return v.Obj
+	case *ast.SelectorExpr:
+		if v.Sel.Obj != nil {
+			return v.Sel.Obj
+		}
+		return obj(v.X)
+	default:
+		return nil
+	}
 }
