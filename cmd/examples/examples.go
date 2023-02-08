@@ -67,15 +67,18 @@ func fsm4() {
 	)
 }
 
+func (s *sf) Check() bool {
+	return true
+}
+
 func newsf() *sf {
-	f := fsm.New(StateBaz)
-	f.Transition(
-		fsm.On(EventBar), fsm.Src(StateBar),
+	s := &sf{}
+	s.fsm = fsm.New(StateBaz)
+	s.fsm.Transition(
+		fsm.On(EventBar), fsm.Src(StateBar), fsm.Check(s.Check),
 		fsm.Dst(StateFoo),
 	)
-	return &sf{
-		fsm: f,
-	}
+	return s
 }
 
 func fsm5() {

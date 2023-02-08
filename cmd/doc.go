@@ -9,60 +9,87 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type transition struct {
-	on    string
-	src   []string
-	dst   string
-	times int
+	on     string
+	src    []string
+	dst    string
+	times  int
+	checks []string
+	calls  []string
 }
 
 type flowchart struct {
 	name        string
+	source      string
 	initial     string
 	transitions []transition
 }
 
 func (fc *flowchart) render(w io.Writer) error {
-	r := fc.name + "\n```mermaid\nflowchart LR\n"
+	r := "\n```mermaid\n---\ntitle: " +
+		fc.name + " " +
+		fc.source +
+		"\n---\nflowchart LR\n"
 	nodes := map[string]string{}
 	if fc.initial != "" {
 		r += "id0[Start]\n"
 		nodes["Start"] = "id0"
 		fc.transitions = append(fc.transitions, transition{src: []string{"Start"}, dst: fc.initial})
 	}
-	fn := func(ns ...string) error {
-		for _, n := range ns {
-			if nodes[n] != "" {
-				return nil
-			}
-			id := "id" + strconv.Itoa(len(nodes))
-			nodes[n] = id
-			r += id + "(" + n + ")\n"
+	newnode := func(id, label string, style byte) {
+		if id == "" || nodes[id] != "" {
+			return
 		}
-		return nil
+		nid := "id" + strconv.Itoa(len(nodes))
+		nodes[id] = nid
+		switch style {
+		case '(':
+			r += nid + "(" + label + ")\n"
+		case '[':
+			r += nid + "[[" + label + "]]\n"
+		}
+		return
+	}
+	callnode := func(t *transition) string {
+		return strings.Join(t.calls, "|") + "||" + t.dst
 	}
 	for _, t := range fc.transitions {
-		err := fn(t.src...)
-		if err != nil {
-			return err
+		for _, src := range t.src {
+			newnode(src, src, '(')
 		}
-		err = fn(t.dst)
-		if err != nil {
-			return err
+		newnode(t.dst, t.dst, '(')
+		if len(t.calls) > 0 {
+			newnode(callnode(&t), strings.Join(t.calls, " ,"), '[')
 		}
 	}
 	for _, t := range fc.transitions {
 		on := t.on
+		if len(t.checks) > 0 {
+			if on != "" {
+				on += " + "
+			}
+			on += strings.Join(t.checks, "? + ") + "?"
+		}
 		if t.times > 1 {
 			on += " x" + strconv.Itoa(t.times)
 		}
 		if on != "" {
 			on = "|" + on + "|"
 		}
+		tdst := t.dst
+		if len(t.calls) > 0 {
+			tdst = callnode(&t)
+			r += nodes[tdst] + "-->" + nodes[t.dst] + "\n"
+		}
 		for _, src := range t.src {
-			r += nodes[src] + "-->" + on + nodes[t.dst] + "\n"
+			dst := tdst
+			if dst == "" {
+				dst = src
+			}
+			r += nodes[src] + "-->" + on + nodes[dst] + "\n"
 		}
 	}
 	_, err := io.WriteString(w, r+"```\n")
@@ -93,7 +120,13 @@ func main() {
 				switch stmt := stmt.(type) {
 				case *ast.AssignStmt:
 					for i := range stmt.Lhs {
-						fc := parseInit(stmt.Rhs[i], fileAst.Name.String()+"."+decl.Name.String()+"()")
+						if i >= len(stmt.Rhs) {
+							continue
+						}
+						fc := parseInit(stmt.Rhs[i],
+							fileAst.Name.String()+"."+decl.Name.String()+"()",
+							fset.Position(stmt.Pos()).String(),
+						)
 						if fc == nil {
 							continue
 						}
@@ -119,7 +152,10 @@ func main() {
 				case *ast.ValueSpec:
 					for i, id := range spec.Names {
 						if len(spec.Values) > i {
-							fc := parseInit(spec.Values[i], fileAst.Name.String()+"."+id.String())
+							fc := parseInit(spec.Values[i],
+								fileAst.Name.String()+"."+id.String(),
+								fset.Position(spec.Pos()).String(),
+							)
 							if fc != nil {
 								flowcharts[id.Obj] = fc
 							}
@@ -134,16 +170,16 @@ func main() {
 	}
 }
 
-func parseInit(e ast.Expr, name string) *flowchart {
+func parseInit(e ast.Expr, name, source string) *flowchart {
 	var call *ast.CallExpr
 	switch v := e.(type) {
 	case *ast.CallExpr:
 		call = v
 	case *ast.KeyValueExpr:
-		return parseInit(v.Value, name)
+		return parseInit(v.Value, name, source)
 	case *ast.CompositeLit:
 		for _, e := range v.Elts {
-			i := parseInit(e, name)
+			i := parseInit(e, name, source)
 			if i != nil {
 				return i
 			}
@@ -153,7 +189,8 @@ func parseInit(e ast.Expr, name string) *flowchart {
 		return nil
 	}
 	fc := flowchart{
-		name: name,
+		name:   name,
+		source: source,
 	}
 	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok || sel.Sel.Name != "New" {
@@ -197,11 +234,40 @@ func parseTransition(e ast.Expr) (*ast.Object, *transition) {
 					if lit, ok := call.Args[0].(*ast.BasicLit); ok {
 						t.times, _ = strconv.Atoi(lit.Value)
 					}
+				case "Check":
+					chk := funcname(call.Args[0], "Check")
+					if chk != "" {
+						t.checks = append(t.checks, chk)
+					}
+				case "NotCheck":
+					chk := funcname(call.Args[0], "Check")
+					if chk != "" {
+						t.checks = append(t.checks, "!"+chk)
+					}
+				case "Call":
+					cll := funcname(call.Args[0], "Call")
+					if cll != "" {
+						t.calls = append(t.calls, cll)
+					}
 				}
 			}
 		}
 	}
 	return obj(sel.X), &t
+}
+
+func funcname(s ast.Expr, def string) string {
+	switch check := s.(type) {
+	case *ast.FuncLit:
+		fmt.Printf("funclit: %#v", check)
+		return def
+	case *ast.SelectorExpr:
+		return check.Sel.String()
+		fmt.Printf("sel: %#v", check)
+	default:
+		fmt.Printf("other: %#v", check)
+	}
+	return ""
 }
 
 func obj(s ast.Expr) *ast.Object {
