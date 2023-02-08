@@ -257,15 +257,15 @@ func parseTransition(e ast.Expr) (*ast.Object, *transition) {
 }
 
 func funcname(s ast.Expr, def string) string {
-	switch check := s.(type) {
+	switch fn := s.(type) {
 	case *ast.FuncLit:
-		fmt.Printf("funclit: %#v", check)
 		return def
 	case *ast.SelectorExpr:
-		return check.Sel.String()
-		fmt.Printf("sel: %#v", check)
+		return fn.Sel.String()
+	case *ast.CallExpr:
+		return funcname(fn.Fun, def)
 	default:
-		fmt.Printf("other: %#v", check)
+		fmt.Printf("other: %v / %#v\n", fn, fn)
 	}
 	return ""
 }
