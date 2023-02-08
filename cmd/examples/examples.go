@@ -27,7 +27,7 @@ func fsm1() {
 }
 
 var (
-	f = fms.New(StateBar)
+	f = fsm.New(StateBar)
 )
 
 func fsm2() {

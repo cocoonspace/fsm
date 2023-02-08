@@ -104,17 +104,27 @@ func main() {
 				switch stmt := stmt.(type) {
 				case *ast.AssignStmt:
 					for i := range stmt.Lhs {
-						id := stmt.Lhs[i].(*ast.Ident)
 						fc := parseInit(stmt.Rhs[i])
-						if fc != nil {
-							fsms[id.Obj] = fc
+						if fc == nil {
+							continue
+						}
+						switch v := stmt.Lhs[i].(type) {
+						case *ast.Ident:
+							fsms[v.Obj] = fc
+						case *ast.SelectorExpr:
+							fsms[v.Sel.Obj] = fc
 						}
 					}
 				case *ast.ExprStmt:
 					obj, t := parseTransition(stmt.X)
-					if obj != nil && t != nil {
-						fsms[obj].transitions = append(fsms[obj].transitions, *t)
+					if obj == nil || t == nil {
+						continue
 					}
+					if fsms[obj] == nil {
+						fmt.Fprintf(os.Stderr, "Error: Found transition but no matching FSM in %v\n", fset.Position(stmt.Pos()))
+						continue
+					}
+					fsms[obj].transitions = append(fsms[obj].transitions, *t)
 				}
 			}
 		case *ast.GenDecl:
@@ -146,6 +156,10 @@ func parseInit(e ast.Expr) *flowchart {
 	fc := flowchart{}
 	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok || sel.Sel.Name != "New" {
+		return nil
+	}
+	pkg, ok := sel.X.(*ast.Ident)
+	if !ok || pkg.Name != "fsm" {
 		return nil
 	}
 	if ident, ok := call.Args[0].(*ast.Ident); ok {
