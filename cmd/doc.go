@@ -19,21 +19,16 @@ type transition struct {
 }
 
 type flowchart struct {
+	name        string
 	initial     string
 	transitions []transition
 }
 
 func (fc *flowchart) render(w io.Writer) error {
-	_, err := io.WriteString(w, "flowchart LR\n")
-	if err != nil {
-		return err
-	}
+	r := fc.name + "\n```mermaid\nflowchart LR\n"
 	nodes := map[string]string{}
 	if fc.initial != "" {
-		_, err = io.WriteString(w, "id0[Start]\n")
-		if err != nil {
-			return err
-		}
+		r += "id0[Start]\n"
 		nodes["Start"] = "id0"
 		fc.transitions = append(fc.transitions, transition{src: []string{"Start"}, dst: fc.initial})
 	}
@@ -44,10 +39,7 @@ func (fc *flowchart) render(w io.Writer) error {
 			}
 			id := "id" + strconv.Itoa(len(nodes))
 			nodes[n] = id
-			_, err := io.WriteString(w, id+"("+n+")\n")
-			if err != nil {
-				return err
-			}
+			r += id + "(" + n + ")\n"
 		}
 		return nil
 	}
@@ -70,17 +62,14 @@ func (fc *flowchart) render(w io.Writer) error {
 			on = "|" + on + "|"
 		}
 		for _, src := range t.src {
-			_, err := io.WriteString(w, nodes[src]+"-->"+on+nodes[t.dst]+"\n")
-			if err != nil {
-				return err
-			}
+			r += nodes[src] + "-->" + on + nodes[t.dst] + "\n"
 		}
 	}
-	return nil
+	_, err := io.WriteString(w, r+"```\n")
+	return err
 }
 
 func main() {
-
 	flag.Parse()
 	file := flag.Arg(0)
 	if file == "" {
@@ -104,7 +93,7 @@ func main() {
 				switch stmt := stmt.(type) {
 				case *ast.AssignStmt:
 					for i := range stmt.Lhs {
-						fc := parseInit(stmt.Rhs[i])
+						fc := parseInit(stmt.Rhs[i], fileAst.Name.String()+"."+decl.Name.String()+"()")
 						if fc == nil {
 							continue
 						}
@@ -130,7 +119,7 @@ func main() {
 				case *ast.ValueSpec:
 					for i, id := range spec.Names {
 						if len(spec.Values) > i {
-							fc := parseInit(spec.Values[i])
+							fc := parseInit(spec.Values[i], fileAst.Name.String()+"."+id.String())
 							if fc != nil {
 								flowcharts[id.Obj] = fc
 							}
@@ -145,16 +134,16 @@ func main() {
 	}
 }
 
-func parseInit(e ast.Expr) *flowchart {
+func parseInit(e ast.Expr, name string) *flowchart {
 	var call *ast.CallExpr
 	switch v := e.(type) {
 	case *ast.CallExpr:
 		call = v
 	case *ast.KeyValueExpr:
-		return parseInit(v.Value)
+		return parseInit(v.Value, name)
 	case *ast.CompositeLit:
 		for _, e := range v.Elts {
-			i := parseInit(e)
+			i := parseInit(e, name)
 			if i != nil {
 				return i
 			}
@@ -163,7 +152,9 @@ func parseInit(e ast.Expr) *flowchart {
 	if call == nil || len(call.Args) != 1 {
 		return nil
 	}
-	fc := flowchart{}
+	fc := flowchart{
+		name: name,
+	}
 	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok || sel.Sel.Name != "New" {
 		return nil

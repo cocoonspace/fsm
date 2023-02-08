@@ -7,6 +7,7 @@ import (
 const (
 	StateFoo fsm.State = iota
 	StateBar
+	StateBaz
 )
 
 const (
@@ -52,4 +53,32 @@ func fsm3() {
 		fsm.On(EventBar), fsm.Src(StateBar),
 		fsm.Dst(StateFoo),
 	)
+}
+
+var (
+	fs2 = sf{}
+)
+
+func fsm4() {
+	fs2.fsm = fsm.New(StateFoo)
+	fs2.fsm.Transition(
+		fsm.On(EventBar), fsm.Src(StateBar),
+		fsm.Dst(StateFoo),
+	)
+}
+
+func newsf() *sf {
+	f := fsm.New(StateBaz)
+	f.Transition(
+		fsm.On(EventBar), fsm.Src(StateBar),
+		fsm.Dst(StateFoo),
+	)
+	return &sf{
+		fsm: f,
+	}
+}
+
+func fsm5() {
+	fs3 := newsf()
+	fs3 = fs3
 }
